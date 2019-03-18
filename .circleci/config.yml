@@ -1,0 +1,13 @@
+version: 2
+jobs:
+  build:
+    working_directory: /go/src/github.com/aws/aws-sdk-go
+    docker:
+      - image: golang:1.11.5
+    environment:
+      GO111MODULE: "off"
+    steps:
+      - checkout
+      - run: make get-deps
+      - run: make ci-test
+
