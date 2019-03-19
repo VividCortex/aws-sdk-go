@@ -1,0 +1,15 @@
+version: 2
+jobs:
+  build:
+    working_directory: /go/src/github.com/aws/aws-sdk-go
+    docker:
+      - image: golang:1.11.6
+    environment:
+      # Couldn't make it pass tests with modules on as it updates go.mod and go.sum
+      # which leads to ci-test-generate-validate target failing
+      GO111MODULE: "off"
+    steps:
+      - checkout
+      - run: make get-deps
+      - run: make ci-test
+
