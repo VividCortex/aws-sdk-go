@@ -3,7 +3,7 @@ jobs:
   build:
     working_directory: /go/src/github.com/aws/aws-sdk-go
     docker:
-      - image: golang:1.11.6
+      - image: golang:1.12.5
     environment:
       # Couldn't make it pass tests with modules on as it updates go.mod and go.sum
       # which leads to ci-test-generate-validate target failing
