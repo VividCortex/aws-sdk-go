@@ -642,6 +642,40 @@
         }
       ]
     },
+    "ListTagsForResource": {
+      "name": "ListTagsForResource",
+      "http": {
+        "method": "GET",
+        "requestUri": "/v20190125/tags",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "ListTagsForResourceInput"
+      },
+      "output": {
+        "shape": "ListTagsForResourceOutput"
+      },
+      "errors": [
+        {
+          "shape": "BadRequestException"
+        },
+        {
+          "shape": "ForbiddenException"
+        },
+        {
+          "shape": "InternalServerErrorException"
+        },
+        {
+          "shape": "NotFoundException"
+        },
+        {
+          "shape": "ServiceUnavailableException"
+        },
+        {
+          "shape": "TooManyRequestsException"
+        }
+      ]
+    },
     "ListVirtualNodes": {
       "name": "ListVirtualNodes",
       "http": {
@@ -743,6 +777,117 @@
           "shape": "TooManyRequestsException"
         }
       ]
+    },
+    "TagResource": {
+      "name": "TagResource",
+      "http": {
+        "method": "PUT",
+        "requestUri": "/v20190125/tag",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "TagResourceInput"
+      },
+      "output": {
+        "shape": "TagResourceOutput"
+      },
+      "errors": [
+        {
+          "shape": "BadRequestException"
+        },
+        {
+          "shape": "ForbiddenException"
+        },
+        {
+          "shape": "InternalServerErrorException"
+        },
+        {
+          "shape": "NotFoundException"
+        },
+        {
+          "shape": "ServiceUnavailableException"
+        },
+        {
+          "shape": "TooManyRequestsException"
+        },
+        {
+          "shape": "TooManyTagsException"
+        }
+      ],
+      "idempotent": true
+    },
+    "UntagResource": {
+      "name": "UntagResource",
+      "http": {
+        "method": "PUT",
+        "requestUri": "/v20190125/untag",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "UntagResourceInput"
+      },
+      "output": {
+        "shape": "UntagResourceOutput"
+      },
+      "errors": [
+        {
+          "shape": "BadRequestException"
+        },
+        {
+          "shape": "ForbiddenException"
+        },
+        {
+          "shape": "InternalServerErrorException"
+        },
+        {
+          "shape": "NotFoundException"
+        },
+        {
+          "shape": "ServiceUnavailableException"
+        },
+        {
+          "shape": "TooManyRequestsException"
+        }
+      ],
+      "idempotent": true
+    },
+    "UpdateMesh": {
+      "name": "UpdateMesh",
+      "http": {
+        "method": "PUT",
+        "requestUri": "/v20190125/meshes/{meshName}",
+        "responseCode": 200
+      },
+      "input": {
+        "shape": "UpdateMeshInput"
+      },
+      "output": {
+        "shape": "UpdateMeshOutput"
+      },
+      "errors": [
+        {
+          "shape": "BadRequestException"
+        },
+        {
+          "shape": "ConflictException"
+        },
+        {
+          "shape": "ForbiddenException"
+        },
+        {
+          "shape": "InternalServerErrorException"
+        },
+        {
+          "shape": "NotFoundException"
+        },
+        {
+          "shape": "ServiceUnavailableException"
+        },
+        {
+          "shape": "TooManyRequestsException"
+        }
+      ],
+      "idempotent": true
     },
     "UpdateRoute": {
       "name": "UpdateRoute",
@@ -961,6 +1106,14 @@
         }
       }
     },
+    "TcpRetryPolicyEvents": {
+      "type": "list",
+      "member": {
+        "shape": "TcpRetryPolicyEvent"
+      },
+      "min": 1,
+      "max": 1
+    },
     "CreateVirtualServiceInput": {
       "type": "structure",
       "required": [
@@ -980,6 +1133,9 @@
         },
         "spec": {
           "shape": "VirtualServiceSpec"
+        },
+        "tags": {
+          "shape": "TagList"
         },
         "virtualServiceName": {
           "shape": "ServiceName"
@@ -1021,6 +1177,37 @@
         }
       }
     },
+    "TagKeyList": {
+      "type": "list",
+      "member": {
+        "shape": "TagKey"
+      },
+      "min": 0,
+      "max": 50
+    },
+    "ListTagsForResourceInput": {
+      "type": "structure",
+      "required": [
+        "resourceArn"
+      ],
+      "members": {
+        "limit": {
+          "shape": "TagsLimit",
+          "location": "querystring",
+          "locationName": "limit"
+        },
+        "nextToken": {
+          "shape": "String",
+          "location": "querystring",
+          "locationName": "nextToken"
+        },
+        "resourceArn": {
+          "shape": "Arn",
+          "location": "querystring",
+          "locationName": "resourceArn"
+        }
+      }
+    },
     "CreateVirtualNodeOutput": {
       "type": "structure",
       "required": [
@@ -1032,6 +1219,14 @@
         }
       },
       "payload": "virtualNode"
+    },
+    "Logging": {
+      "type": "structure",
+      "members": {
+        "accessLog": {
+          "shape": "AccessLog"
+        }
+      }
     },
     "ServiceUnavailableException": {
       "type": "structure",
@@ -1176,13 +1371,17 @@
       "type": "list",
       "member": {
         "shape": "Listener"
-      }
+      },
+      "min": 0,
+      "max": 1
     },
     "Backends": {
       "type": "list",
       "member": {
         "shape": "Backend"
-      }
+      },
+      "min": 0,
+      "max": 25
     },
     "ResourceInUseException": {
       "type": "structure",
@@ -1316,6 +1515,11 @@
       "min": 0,
       "max": 100
     },
+    "TagValue": {
+      "type": "string",
+      "min": 0,
+      "max": 256
+    },
     "HttpRouteAction": {
       "type": "structure",
       "required": [
@@ -1408,6 +1612,17 @@
         }
       }
     },
+    "EgressFilter": {
+      "type": "structure",
+      "required": [
+        "type"
+      ],
+      "members": {
+        "type": {
+          "shape": "EgressFilterType"
+        }
+      }
+    },
     "VirtualServiceList": {
       "type": "list",
       "member": {
@@ -1471,6 +1686,32 @@
         }
       }
     },
+    "Boolean": {
+      "type": "boolean",
+      "box": true
+    },
+    "HttpRouteHeader": {
+      "type": "structure",
+      "required": [
+        "name"
+      ],
+      "members": {
+        "invert": {
+          "shape": "Boolean"
+        },
+        "match": {
+          "shape": "HeaderMatchMethod"
+        },
+        "name": {
+          "shape": "HeaderName"
+        }
+      }
+    },
+    "HttpRetryPolicyEvent": {
+      "type": "string",
+      "min": 1,
+      "max": 25
+    },
     "DescribeVirtualServiceOutput": {
       "type": "structure",
       "required": [
@@ -1482,6 +1723,17 @@
         }
       },
       "payload": "virtualService"
+    },
+    "FilePath": {
+      "type": "string",
+      "min": 1,
+      "max": 255
+    },
+    "AwsCloudMapInstanceAttributes": {
+      "type": "list",
+      "member": {
+        "shape": "AwsCloudMapInstanceAttribute"
+      }
     },
     "VirtualNodeRef": {
       "type": "structure",
@@ -1514,6 +1766,12 @@
         },
         "meshName": {
           "shape": "ResourceName"
+        },
+        "spec": {
+          "shape": "MeshSpec"
+        },
+        "tags": {
+          "shape": "TagList"
         }
       }
     },
@@ -1529,6 +1787,12 @@
       },
       "payload": "virtualNode"
     },
+    "AwsCloudMapName": {
+      "type": "string",
+      "min": 1,
+      "max": 1024,
+      "pattern": "((?=^.{1,127}$)^([a-zA-Z0-9_][a-zA-Z0-9-_]{0,61}[a-zA-Z0-9_]|[a-zA-Z0-9])(.([a-zA-Z0-9_][a-zA-Z0-9-_]{0,61}[a-zA-Z0-9_]|[a-zA-Z0-9]))*$)|(^.$)"
+    },
     "LimitExceededException": {
       "type": "structure",
       "members": {
@@ -1542,6 +1806,18 @@
         "httpStatusCode": 400,
         "senderFault": true
       }
+    },
+    "UpdateMeshOutput": {
+      "type": "structure",
+      "required": [
+        "mesh"
+      ],
+      "members": {
+        "mesh": {
+          "shape": "MeshData"
+        }
+      },
+      "payload": "mesh"
     },
     "CreateRouteOutput": {
       "type": "structure",
@@ -1643,6 +1919,31 @@
         }
       }
     },
+    "UntagResourceOutput": {
+      "type": "structure",
+      "members": { }
+    },
+    "AwsCloudMapInstanceAttribute": {
+      "type": "structure",
+      "required": [
+        "key",
+        "value"
+      ],
+      "members": {
+        "key": {
+          "shape": "AwsCloudMapInstanceAttributeKey"
+        },
+        "value": {
+          "shape": "AwsCloudMapInstanceAttributeValue"
+        }
+      }
+    },
+    "TcpRetryPolicyEvent": {
+      "type": "string",
+      "enum": [
+        "connection-error"
+      ]
+    },
     "VirtualServiceSpec": {
       "type": "structure",
       "members": {
@@ -1656,6 +1957,21 @@
       "members": {
         "virtualService": {
           "shape": "VirtualServiceBackend"
+        }
+      }
+    },
+    "MatchRange": {
+      "type": "structure",
+      "required": [
+        "end",
+        "start"
+      ],
+      "members": {
+        "end": {
+          "shape": "Long"
+        },
+        "start": {
+          "shape": "Long"
         }
       }
     },
@@ -1694,6 +2010,17 @@
     },
     "Arn": {
       "type": "string"
+    },
+    "TcpRoute": {
+      "type": "structure",
+      "required": [
+        "action"
+      ],
+      "members": {
+        "action": {
+          "shape": "TcpRouteAction"
+        }
+      }
     },
     "VirtualNodeList": {
       "type": "list",
@@ -1751,6 +2078,39 @@
         }
       }
     },
+    "UpdateMeshInput": {
+      "type": "structure",
+      "required": [
+        "meshName"
+      ],
+      "members": {
+        "clientToken": {
+          "shape": "String",
+          "idempotencyToken": true
+        },
+        "meshName": {
+          "shape": "ResourceName",
+          "location": "uri",
+          "locationName": "meshName"
+        },
+        "spec": {
+          "shape": "MeshSpec"
+        }
+      }
+    },
+    "DurationUnit": {
+      "type": "string",
+      "enum": [
+        "ms",
+        "s"
+      ]
+    },
+    "RoutePriority": {
+      "type": "integer",
+      "box": true,
+      "min": 0,
+      "max": 1000
+    },
     "ListVirtualServicesInput": {
       "type": "structure",
       "required": [
@@ -1794,8 +2154,19 @@
         "spec": {
           "shape": "VirtualRouterSpec"
         },
+        "tags": {
+          "shape": "TagList"
+        },
         "virtualRouterName": {
           "shape": "ResourceName"
+        }
+      }
+    },
+    "AccessLog": {
+      "type": "structure",
+      "members": {
+        "file": {
+          "shape": "FileAccessLog"
         }
       }
     },
@@ -1869,6 +2240,14 @@
         }
       }
     },
+    "HttpRetryPolicyEvents": {
+      "type": "list",
+      "member": {
+        "shape": "HttpRetryPolicyEvent"
+      },
+      "min": 1,
+      "max": 25
+    },
     "ListVirtualNodesLimit": {
       "type": "integer",
       "box": true,
@@ -1892,11 +2271,14 @@
       "min": 1,
       "max": 255
     },
+    "AwsCloudMapInstanceAttributeKey": {
+      "type": "string",
+      "min": 1,
+      "max": 255,
+      "pattern": "^[a-zA-Z0-9!-~]+$"
+    },
     "VirtualRouterSpec": {
       "type": "structure",
-      "required": [
-        "listeners"
-      ],
       "members": {
         "listeners": {
           "shape": "VirtualRouterListeners"
@@ -1920,6 +2302,11 @@
     "Timestamp": {
       "type": "timestamp"
     },
+    "HeaderMatch": {
+      "type": "string",
+      "min": 1,
+      "max": 255
+    },
     "VirtualNodeSpec": {
       "type": "structure",
       "members": {
@@ -1928,6 +2315,9 @@
         },
         "listeners": {
           "shape": "Listeners"
+        },
+        "logging": {
+          "shape": "Logging"
         },
         "serviceDiscovery": {
           "shape": "ServiceDiscovery"
@@ -1952,6 +2342,33 @@
       "type": "list",
       "member": {
         "shape": "VirtualRouterListener"
+      },
+      "min": 1,
+      "max": 1
+    },
+    "HttpMethod": {
+      "type": "string",
+      "enum": [
+        "CONNECT",
+        "DELETE",
+        "GET",
+        "HEAD",
+        "OPTIONS",
+        "PATCH",
+        "POST",
+        "PUT",
+        "TRACE"
+      ]
+    },
+    "Duration": {
+      "type": "structure",
+      "members": {
+        "unit": {
+          "shape": "DurationUnit"
+        },
+        "value": {
+          "shape": "DurationValue"
+        }
       }
     },
     "ConflictException": {
@@ -1986,8 +2403,17 @@
         "prefix"
       ],
       "members": {
+        "headers": {
+          "shape": "HttpRouteHeaders"
+        },
+        "method": {
+          "shape": "HttpMethod"
+        },
         "prefix": {
           "shape": "String"
+        },
+        "scheme": {
+          "shape": "HttpScheme"
         }
       }
     },
@@ -1995,6 +2421,20 @@
       "type": "list",
       "member": {
         "shape": "MeshRef"
+      }
+    },
+    "TagRef": {
+      "type": "structure",
+      "required": [
+        "key"
+      ],
+      "members": {
+        "key": {
+          "shape": "TagKey"
+        },
+        "value": {
+          "shape": "TagValue"
+        }
       }
     },
     "MeshRef": {
@@ -2011,6 +2451,11 @@
           "shape": "ResourceName"
         }
       }
+    },
+    "MaxRetries": {
+      "type": "long",
+      "box": true,
+      "min": 0
     },
     "MeshStatusCode": {
       "type": "string",
@@ -2040,6 +2485,7 @@
       "required": [
         "meshName",
         "metadata",
+        "spec",
         "status"
       ],
       "members": {
@@ -2048,6 +2494,9 @@
         },
         "metadata": {
           "shape": "ResourceMetadata"
+        },
+        "spec": {
+          "shape": "MeshSpec"
         },
         "status": {
           "shape": "MeshStatus"
@@ -2079,6 +2528,12 @@
         }
       }
     },
+    "AwsCloudMapInstanceAttributeValue": {
+      "type": "string",
+      "min": 1,
+      "max": 1024,
+      "pattern": "^([a-zA-Z0-9!-~][ ta-zA-Z0-9!-~]*){0,1}[a-zA-Z0-9!-~]{0,1}$"
+    },
     "WeightedTarget": {
       "type": "structure",
       "required": [
@@ -2091,6 +2546,17 @@
         },
         "weight": {
           "shape": "PercentInt"
+        }
+      }
+    },
+    "TcpRouteAction": {
+      "type": "structure",
+      "required": [
+        "weightedTargets"
+      ],
+      "members": {
+        "weightedTargets": {
+          "shape": "WeightedTargets"
         }
       }
     },
@@ -2262,6 +2728,40 @@
         "fault": true
       }
     },
+    "HeaderName": {
+      "type": "string",
+      "min": 1,
+      "max": 50
+    },
+    "TagList": {
+      "type": "list",
+      "member": {
+        "shape": "TagRef"
+      },
+      "min": 0,
+      "max": 50
+    },
+    "HttpRetryPolicy": {
+      "type": "structure",
+      "required": [
+        "maxRetries",
+        "perRetryTimeout"
+      ],
+      "members": {
+        "httpRetryEvents": {
+          "shape": "HttpRetryPolicyEvents"
+        },
+        "maxRetries": {
+          "shape": "MaxRetries"
+        },
+        "perRetryTimeout": {
+          "shape": "Duration"
+        },
+        "tcpRetryEvents": {
+          "shape": "TcpRetryPolicyEvents"
+        }
+      }
+    },
     "DescribeVirtualRouterInput": {
       "type": "structure",
       "required": [
@@ -2280,6 +2780,10 @@
           "locationName": "virtualRouterName"
         }
       }
+    },
+    "TagResourceOutput": {
+      "type": "structure",
+      "members": { }
     },
     "RouteList": {
       "type": "list",
@@ -2301,6 +2805,40 @@
         "senderFault": true
       }
     },
+    "TooManyTagsException": {
+      "type": "structure",
+      "members": {
+        "message": {
+          "shape": "String"
+        }
+      },
+      "exception": true,
+      "error": {
+        "code": "TooManyTagsException",
+        "httpStatusCode": 400,
+        "senderFault": true
+      }
+    },
+    "HeaderMatchMethod": {
+      "type": "structure",
+      "members": {
+        "exact": {
+          "shape": "HeaderMatch"
+        },
+        "prefix": {
+          "shape": "HeaderMatch"
+        },
+        "range": {
+          "shape": "MatchRange"
+        },
+        "regex": {
+          "shape": "HeaderMatch"
+        },
+        "suffix": {
+          "shape": "HeaderMatch"
+        }
+      }
+    },
     "DeleteMeshOutput": {
       "type": "structure",
       "required": [
@@ -2313,6 +2851,18 @@
       },
       "payload": "mesh"
     },
+    "EgressFilterType": {
+      "type": "string",
+      "enum": [
+        "ALLOW_ALL",
+        "DROP_ALL"
+      ]
+    },
+    "DurationValue": {
+      "type": "long",
+      "box": true,
+      "min": 0
+    },
     "Hostname": {
       "type": "string"
     },
@@ -2320,6 +2870,23 @@
       "type": "integer",
       "min": 1,
       "max": 65535
+    },
+    "TagResourceInput": {
+      "type": "structure",
+      "required": [
+        "resourceArn",
+        "tags"
+      ],
+      "members": {
+        "resourceArn": {
+          "shape": "Arn",
+          "location": "querystring",
+          "locationName": "resourceArn"
+        },
+        "tags": {
+          "shape": "TagList"
+        }
+      }
     },
     "CreateRouteInput": {
       "type": "structure",
@@ -2345,6 +2912,9 @@
         "spec": {
           "shape": "RouteSpec"
         },
+        "tags": {
+          "shape": "TagList"
+        },
         "virtualRouterName": {
           "shape": "ResourceName",
           "location": "uri",
@@ -2356,7 +2926,17 @@
       "type": "list",
       "member": {
         "shape": "WeightedTarget"
-      }
+      },
+      "min": 1,
+      "max": 10
+    },
+    "HttpRouteHeaders": {
+      "type": "list",
+      "member": {
+        "shape": "HttpRouteHeader"
+      },
+      "min": 1,
+      "max": 10
     },
     "VirtualServiceProvider": {
       "type": "structure",
@@ -2371,6 +2951,31 @@
     },
     "String": {
       "type": "string"
+    },
+    "AwsCloudMapServiceDiscovery": {
+      "type": "structure",
+      "required": [
+        "namespaceName",
+        "serviceName"
+      ],
+      "members": {
+        "attributes": {
+          "shape": "AwsCloudMapInstanceAttributes"
+        },
+        "namespaceName": {
+          "shape": "AwsCloudMapName"
+        },
+        "serviceName": {
+          "shape": "AwsCloudMapName"
+        }
+      }
+    },
+    "HttpScheme": {
+      "type": "string",
+      "enum": [
+        "http",
+        "https"
+      ]
     },
     "UpdateVirtualServiceOutput": {
       "type": "structure",
@@ -2445,6 +3050,9 @@
         "spec": {
           "shape": "VirtualNodeSpec"
         },
+        "tags": {
+          "shape": "TagList"
+        },
         "virtualNodeName": {
           "shape": "ResourceName"
         }
@@ -2469,6 +3077,12 @@
       "members": {
         "httpRoute": {
           "shape": "HttpRoute"
+        },
+        "priority": {
+          "shape": "RoutePriority"
+        },
+        "tcpRoute": {
+          "shape": "TcpRoute"
         }
       }
     },
@@ -2484,6 +3098,9 @@
         },
         "match": {
           "shape": "HttpRouteMatch"
+        },
+        "retryPolicy": {
+          "shape": "HttpRetryPolicy"
         }
       }
     },
@@ -2500,6 +3117,14 @@
         }
       }
     },
+    "MeshSpec": {
+      "type": "structure",
+      "members": {
+        "egressFilter": {
+          "shape": "EgressFilter"
+        }
+      }
+    },
     "CreateVirtualServiceOutput": {
       "type": "structure",
       "required": [
@@ -2511,6 +3136,17 @@
         }
       },
       "payload": "virtualService"
+    },
+    "FileAccessLog": {
+      "type": "structure",
+      "required": [
+        "path"
+      ],
+      "members": {
+        "path": {
+          "shape": "FilePath"
+        }
+      }
     },
     "VirtualRouterServiceProvider": {
       "type": "structure",
@@ -2542,9 +3178,26 @@
         }
       }
     },
+    "ListTagsForResourceOutput": {
+      "type": "structure",
+      "required": [
+        "tags"
+      ],
+      "members": {
+        "nextToken": {
+          "shape": "String"
+        },
+        "tags": {
+          "shape": "TagList"
+        }
+      }
+    },
     "ServiceDiscovery": {
       "type": "structure",
       "members": {
+        "awsCloudMap": {
+          "shape": "AwsCloudMapServiceDiscovery"
+        },
         "dns": {
           "shape": "DnsServiceDiscovery"
         }
@@ -2564,6 +3217,23 @@
         }
       }
     },
+    "UntagResourceInput": {
+      "type": "structure",
+      "required": [
+        "resourceArn",
+        "tagKeys"
+      ],
+      "members": {
+        "resourceArn": {
+          "shape": "Arn",
+          "location": "querystring",
+          "locationName": "resourceArn"
+        },
+        "tagKeys": {
+          "shape": "TagKeyList"
+        }
+      }
+    },
     "DeleteVirtualRouterOutput": {
       "type": "structure",
       "required": [
@@ -2575,6 +3245,17 @@
         }
       },
       "payload": "virtualRouter"
+    },
+    "TagsLimit": {
+      "type": "integer",
+      "box": true,
+      "min": 1,
+      "max": 50
+    },
+    "TagKey": {
+      "type": "string",
+      "min": 1,
+      "max": 128
     },
     "VirtualServiceStatusCode": {
       "type": "string",
