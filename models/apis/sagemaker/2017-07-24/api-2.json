@@ -951,6 +951,10 @@
         "SingleRecord"
       ]
     },
+    "BillableTimeInSeconds":{
+      "type":"integer",
+      "min":1
+    },
     "Boolean":{"type":"boolean"},
     "BooleanOperator":{
       "type":"string",
@@ -1038,6 +1042,14 @@
       "member":{"shape":"ChannelSpecification"},
       "max":8,
       "min":1
+    },
+    "CheckpointConfig":{
+      "type":"structure",
+      "required":["S3Uri"],
+      "members":{
+        "S3Uri":{"shape":"S3Uri"},
+        "LocalPath":{"shape":"DirectoryPath"}
+      }
     },
     "CodeRepositoryArn":{
       "type":"string",
@@ -1357,8 +1369,7 @@
       "type":"structure",
       "required":[
         "HyperParameterTuningJobName",
-        "HyperParameterTuningJobConfig",
-        "TrainingJobDefinition"
+        "HyperParameterTuningJobConfig"
       ],
       "members":{
         "HyperParameterTuningJobName":{"shape":"HyperParameterTuningJobName"},
@@ -1528,7 +1539,9 @@
         "StoppingCondition":{"shape":"StoppingCondition"},
         "Tags":{"shape":"TagList"},
         "EnableNetworkIsolation":{"shape":"Boolean"},
-        "EnableInterContainerTrafficEncryption":{"shape":"Boolean"}
+        "EnableInterContainerTrafficEncryption":{"shape":"Boolean"},
+        "EnableManagedSpotTraining":{"shape":"Boolean"},
+        "CheckpointConfig":{"shape":"CheckpointConfig"}
       }
     },
     "CreateTrainingJobResponse":{
@@ -1557,6 +1570,7 @@
         "TransformInput":{"shape":"TransformInput"},
         "TransformOutput":{"shape":"TransformOutput"},
         "TransformResources":{"shape":"TransformResources"},
+        "DataProcessing":{"shape":"DataProcessing"},
         "Tags":{"shape":"TagList"}
       }
     },
@@ -1578,6 +1592,7 @@
         "WorkteamName":{"shape":"WorkteamName"},
         "MemberDefinitions":{"shape":"MemberDefinitions"},
         "Description":{"shape":"String200"},
+        "NotificationConfiguration":{"shape":"NotificationConfiguration"},
         "Tags":{"shape":"TagList"}
       }
     },
@@ -1594,11 +1609,19 @@
       "min":1,
       "pattern":"[\\S\\s]+"
     },
+    "DataProcessing":{
+      "type":"structure",
+      "members":{
+        "InputFilter":{"shape":"JsonPath"},
+        "OutputFilter":{"shape":"JsonPath"},
+        "JoinSource":{"shape":"JoinSource"}
+      }
+    },
     "DataSource":{
       "type":"structure",
-      "required":["S3DataSource"],
       "members":{
-        "S3DataSource":{"shape":"S3DataSource"}
+        "S3DataSource":{"shape":"S3DataSource"},
+        "FileSystemDataSource":{"shape":"FileSystemDataSource"}
       }
     },
     "DeleteAlgorithmInput":{
@@ -1855,7 +1878,6 @@
         "HyperParameterTuningJobName",
         "HyperParameterTuningJobArn",
         "HyperParameterTuningJobConfig",
-        "TrainingJobDefinition",
         "HyperParameterTuningJobStatus",
         "CreationTime",
         "TrainingJobStatusCounters",
@@ -2084,7 +2106,11 @@
         "SecondaryStatusTransitions":{"shape":"SecondaryStatusTransitions"},
         "FinalMetricDataList":{"shape":"FinalMetricDataList"},
         "EnableNetworkIsolation":{"shape":"Boolean"},
-        "EnableInterContainerTrafficEncryption":{"shape":"Boolean"}
+        "EnableInterContainerTrafficEncryption":{"shape":"Boolean"},
+        "EnableManagedSpotTraining":{"shape":"Boolean"},
+        "CheckpointConfig":{"shape":"CheckpointConfig"},
+        "TrainingTimeInSeconds":{"shape":"TrainingTimeInSeconds"},
+        "BillableTimeInSeconds":{"shape":"BillableTimeInSeconds"}
       }
     },
     "DescribeTransformJobRequest":{
@@ -2121,7 +2147,8 @@
         "CreationTime":{"shape":"Timestamp"},
         "TransformStartTime":{"shape":"Timestamp"},
         "TransformEndTime":{"shape":"Timestamp"},
-        "LabelingJobArn":{"shape":"LabelingJobArn"}
+        "LabelingJobArn":{"shape":"LabelingJobArn"},
+        "DataProcessing":{"shape":"DataProcessing"}
       }
     },
     "DescribeWorkteamRequest":{
@@ -2176,6 +2203,11 @@
         "Enabled",
         "Disabled"
       ]
+    },
+    "DirectoryPath":{
+      "type":"string",
+      "max":4096,
+      "pattern":".*"
     },
     "DisassociateAdditionalCodeRepositories":{"type":"boolean"},
     "DisassociateDefaultCodeRepository":{"type":"boolean"},
@@ -2315,6 +2347,40 @@
       "type":"string",
       "max":1024
     },
+    "FileSystemAccessMode":{
+      "type":"string",
+      "enum":[
+        "rw",
+        "ro"
+      ]
+    },
+    "FileSystemDataSource":{
+      "type":"structure",
+      "required":[
+        "FileSystemId",
+        "FileSystemAccessMode",
+        "FileSystemType",
+        "DirectoryPath"
+      ],
+      "members":{
+        "FileSystemId":{"shape":"FileSystemId"},
+        "FileSystemAccessMode":{"shape":"FileSystemAccessMode"},
+        "FileSystemType":{"shape":"FileSystemType"},
+        "DirectoryPath":{"shape":"DirectoryPath"}
+      }
+    },
+    "FileSystemId":{
+      "type":"string",
+      "min":11,
+      "pattern":".*"
+    },
+    "FileSystemType":{
+      "type":"string",
+      "enum":[
+        "EFS",
+        "FSxLustre"
+      ]
+    },
     "Filter":{
       "type":"structure",
       "required":["Name"],
@@ -2351,7 +2417,7 @@
     "FinalMetricDataList":{
       "type":"list",
       "member":{"shape":"MetricData"},
-      "max":20,
+      "max":40,
       "min":0
     },
     "Float":{"type":"float"},
@@ -2485,7 +2551,9 @@
         "ResourceConfig":{"shape":"ResourceConfig"},
         "StoppingCondition":{"shape":"StoppingCondition"},
         "EnableNetworkIsolation":{"shape":"Boolean"},
-        "EnableInterContainerTrafficEncryption":{"shape":"Boolean"}
+        "EnableInterContainerTrafficEncryption":{"shape":"Boolean"},
+        "EnableManagedSpotTraining":{"shape":"Boolean"},
+        "CheckpointConfig":{"shape":"CheckpointConfig"}
       }
     },
     "HyperParameterTrainingJobSummaries":{
@@ -2524,9 +2592,7 @@
       "type":"structure",
       "required":[
         "Strategy",
-        "HyperParameterTuningJobObjective",
-        "ResourceLimits",
-        "ParameterRanges"
+        "ResourceLimits"
       ],
       "members":{
         "Strategy":{"shape":"HyperParameterTuningJobStrategyType"},
@@ -2685,7 +2751,7 @@
     "InputDataConfig":{
       "type":"list",
       "member":{"shape":"Channel"},
-      "max":8,
+      "max":20,
       "min":1
     },
     "InputModes":{
@@ -2778,6 +2844,18 @@
       "min":1,
       "pattern":".+"
     },
+    "JoinSource":{
+      "type":"string",
+      "enum":[
+        "Input",
+        "None"
+      ]
+    },
+    "JsonPath":{
+      "type":"string",
+      "max":63,
+      "min":0
+    },
     "KmsKeyId":{
       "type":"string",
       "max":2048,
@@ -2855,7 +2933,8 @@
         "JobReferenceCode":{"shape":"JobReferenceCode"},
         "WorkRequesterAccountId":{"shape":"AccountId"},
         "CreationTime":{"shape":"Timestamp"},
-        "LabelCounters":{"shape":"LabelCountersForWorkteam"}
+        "LabelCounters":{"shape":"LabelCountersForWorkteam"},
+        "NumberOfHumanWorkersPerDataObject":{"shape":"NumberOfHumanWorkersPerDataObject"}
       }
     },
     "LabelingJobForWorkteamSummaryList":{
@@ -3416,6 +3495,10 @@
       "type":"integer",
       "min":1
     },
+    "MaxWaitTimeInSeconds":{
+      "type":"integer",
+      "min":1
+    },
     "MemberDefinition":{
       "type":"structure",
       "members":{
@@ -3450,7 +3533,7 @@
     "MetricDefinitionList":{
       "type":"list",
       "member":{"shape":"MetricDefinition"},
-      "max":20,
+      "max":40,
       "min":0
     },
     "MetricName":{
@@ -3462,7 +3545,8 @@
     "MetricRegex":{
       "type":"string",
       "max":500,
-      "min":1
+      "min":1,
+      "pattern":".+"
     },
     "MetricValue":{"type":"float"},
     "ModelArn":{
@@ -3797,6 +3881,16 @@
       "max":16384,
       "min":5
     },
+    "NotificationConfiguration":{
+      "type":"structure",
+      "members":{
+        "NotificationTopicArn":{"shape":"NotificationTopicArn"}
+      }
+    },
+    "NotificationTopicArn":{
+      "type":"string",
+      "pattern":"arn:aws[a-z\\-]*:sns:[a-z0-9\\-]*:[0-9]{12}:[a-zA-Z0-9_.-]*"
+    },
     "NumberOfHumanWorkersPerDataObject":{
       "type":"integer",
       "max":9,
@@ -3991,12 +4085,25 @@
         "ml.c5.2xlarge",
         "ml.c5.4xlarge",
         "ml.c5.9xlarge",
-        "ml.c5.18xlarge"
+        "ml.c5.18xlarge",
+        "ml.g4dn.xlarge",
+        "ml.g4dn.2xlarge",
+        "ml.g4dn.4xlarge",
+        "ml.g4dn.8xlarge",
+        "ml.g4dn.12xlarge",
+        "ml.g4dn.16xlarge",
+        "ml.r5.large",
+        "ml.r5.xlarge",
+        "ml.r5.2xlarge",
+        "ml.r5.4xlarge",
+        "ml.r5.12xlarge",
+        "ml.r5.24xlarge"
       ]
     },
     "ProductionVariantList":{
       "type":"list",
       "member":{"shape":"ProductionVariant"},
+      "max":10,
       "min":1
     },
     "ProductionVariantSummary":{
@@ -4286,7 +4393,9 @@
         "Stopped",
         "MaxRuntimeExceeded",
         "Completed",
-        "Failed"
+        "Failed",
+        "Interrupted",
+        "MaxWaitTimeExceeded"
       ]
     },
     "SecondaryStatusTransition":{
@@ -4433,7 +4542,8 @@
     "StoppingCondition":{
       "type":"structure",
       "members":{
-        "MaxRuntimeInSeconds":{"shape":"MaxRuntimeInSeconds"}
+        "MaxRuntimeInSeconds":{"shape":"MaxRuntimeInSeconds"},
+        "MaxWaitTimeInSeconds":{"shape":"MaxWaitTimeInSeconds"}
       }
     },
     "String":{"type":"string"},
@@ -4514,6 +4624,7 @@
     "TargetDevice":{
       "type":"string",
       "enum":[
+        "lambda",
         "ml_m4",
         "ml_m5",
         "ml_c4",
@@ -4522,10 +4633,15 @@
         "ml_p3",
         "jetson_tx1",
         "jetson_tx2",
+        "jetson_nano",
         "rasp3b",
         "deeplens",
         "rk3399",
-        "rk3288"
+        "rk3288",
+        "aisage",
+        "sbe_c",
+        "qcs605",
+        "qcs603"
       ]
     },
     "TaskAvailabilityLifetimeInSeconds":{
@@ -4563,8 +4679,8 @@
     },
     "TaskTimeLimitInSeconds":{
       "type":"integer",
-      "max":3600,
-      "min":1
+      "max":28800,
+      "min":30
     },
     "TaskTitle":{
       "type":"string",
@@ -4619,6 +4735,7 @@
         "ml.p3.2xlarge",
         "ml.p3.8xlarge",
         "ml.p3.16xlarge",
+        "ml.p3dn.24xlarge",
         "ml.c5.xlarge",
         "ml.c5.2xlarge",
         "ml.c5.4xlarge",
@@ -4767,6 +4884,10 @@
         "TrainingChannels":{"shape":"ChannelSpecifications"},
         "SupportedTuningJobObjectiveMetrics":{"shape":"HyperParameterTuningJobObjectives"}
       }
+    },
+    "TrainingTimeInSeconds":{
+      "type":"integer",
+      "min":1
     },
     "TransformDataSource":{
       "type":"structure",
@@ -5051,7 +5172,8 @@
       "members":{
         "WorkteamName":{"shape":"WorkteamName"},
         "MemberDefinitions":{"shape":"MemberDefinitions"},
-        "Description":{"shape":"String200"}
+        "Description":{"shape":"String200"},
+        "NotificationConfiguration":{"shape":"NotificationConfiguration"}
       }
     },
     "UpdateWorkteamResponse":{
@@ -5112,7 +5234,8 @@
         "Description":{"shape":"String200"},
         "SubDomain":{"shape":"String"},
         "CreateDate":{"shape":"Timestamp"},
-        "LastUpdatedDate":{"shape":"Timestamp"}
+        "LastUpdatedDate":{"shape":"Timestamp"},
+        "NotificationConfiguration":{"shape":"NotificationConfiguration"}
       }
     },
     "WorkteamArn":{
