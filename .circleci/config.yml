@@ -3,7 +3,7 @@ jobs:
   build:
     working_directory: /go/src/github.com/aws/aws-sdk-go
     docker:
-      - image: golang:1.12.5
+        - image: circleci/golang:1.13.3
     environment:
       GO111MODULE: "off"
       # When running in Docker in Circle, Go thinks there are 36 CPUs
