@@ -3,23 +3,23 @@
 // Package connect provides the client and types for making API
 // requests to Amazon Connect Service.
 //
-// The Amazon Connect API Reference provides descriptions, syntax, and usage
-// examples for each of the Amazon Connect actions, data types, parameters,
-// and errors. Amazon Connect is a cloud-based contact center solution that
-// makes it easy to set up and manage a customer contact center and provide
-// reliable customer engagement at any scale.
+// Amazon Connect is a cloud-based contact center solution that makes it easy
+// to set up and manage a customer contact center and provide reliable customer
+// engagement at any scale.
 //
-// Throttling limits for the Amazon Connect API operations:
+// Amazon Connect provides rich metrics and real-time reporting that allow you
+// to optimize contact routing. You can also resolve customer issues more efficiently
+// by putting customers in touch with the right agents.
 //
-// For the GetMetricData and GetCurrentMetricData operations, a RateLimit of
-// 5 per second, and a BurstLimit of 8 per second.
+// There are limits to the number of Amazon Connect resources that you can create
+// and limits to the number of requests that you can make per second. For more
+// information, see Amazon Connect Service Quotas (https://docs.aws.amazon.com/connect/latest/adminguide/amazon-connect-service-limits.html)
+// in the Amazon Connect Administrator Guide.
 //
-// For all other operations, a RateLimit of 2 per second, and a BurstLimit of
-// 5 per second.
+// To connect programmatically to an AWS service, you use an endpoint. For a
+// list of Amazon Connect endpoints, see Amazon Connect Endpoints (https://docs.aws.amazon.com/general/latest/gr/connect_region.html).
 //
-// You can request an increase to the throttling limits by submitting a Amazon
-// Connect service limits increase form (https://console.aws.amazon.com/support/home#/case/create?issueType=service-limit-increase).
-// You must be signed in to your AWS account to access the form.
+// Working with contact flows? Check out the Amazon Connect Flow language (https://docs.aws.amazon.com/connect/latest/adminguide/flow-language.html).
 //
 // See https://docs.aws.amazon.com/goto/WebAPI/connect-2017-08-08 for more information on this service.
 //

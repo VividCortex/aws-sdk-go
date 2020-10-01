@@ -73,7 +73,9 @@
         {"shape":"TooManyRegistrationsForTargetIdException"},
         {"shape":"TooManyTargetsException"},
         {"shape":"TooManyActionsException"},
-        {"shape":"InvalidLoadBalancerActionException"}
+        {"shape":"InvalidLoadBalancerActionException"},
+        {"shape":"TooManyUniqueTargetGroupsPerLoadBalancerException"},
+        {"shape":"ALPNPolicyNotSupportedException"}
       ]
     },
     "CreateLoadBalancer":{
@@ -127,7 +129,8 @@
         {"shape":"TooManyTargetsException"},
         {"shape":"UnsupportedProtocolException"},
         {"shape":"TooManyActionsException"},
-        {"shape":"InvalidLoadBalancerActionException"}
+        {"shape":"InvalidLoadBalancerActionException"},
+        {"shape":"TooManyUniqueTargetGroupsPerLoadBalancerException"}
       ]
     },
     "CreateTargetGroup":{
@@ -424,7 +427,9 @@
         {"shape":"TooManyRegistrationsForTargetIdException"},
         {"shape":"TooManyTargetsException"},
         {"shape":"TooManyActionsException"},
-        {"shape":"InvalidLoadBalancerActionException"}
+        {"shape":"InvalidLoadBalancerActionException"},
+        {"shape":"TooManyUniqueTargetGroupsPerLoadBalancerException"},
+        {"shape":"ALPNPolicyNotSupportedException"}
       ]
     },
     "ModifyLoadBalancerAttributes":{
@@ -464,7 +469,8 @@
         {"shape":"TargetGroupNotFoundException"},
         {"shape":"UnsupportedProtocolException"},
         {"shape":"TooManyActionsException"},
-        {"shape":"InvalidLoadBalancerActionException"}
+        {"shape":"InvalidLoadBalancerActionException"},
+        {"shape":"TooManyUniqueTargetGroupsPerLoadBalancerException"}
       ]
     },
     "ModifyTargetGroup":{
@@ -625,6 +631,17 @@
     }
   },
   "shapes":{
+    "ALPNPolicyNotSupportedException":{
+      "type":"structure",
+      "members":{
+      },
+      "error":{
+        "code":"ALPNPolicyNotFound",
+        "httpStatusCode":400,
+        "senderFault":true
+      },
+      "exception":true
+    },
     "Action":{
       "type":"structure",
       "required":["Type"],
@@ -635,7 +652,8 @@
         "AuthenticateCognitoConfig":{"shape":"AuthenticateCognitoActionConfig"},
         "Order":{"shape":"ActionOrder"},
         "RedirectConfig":{"shape":"RedirectActionConfig"},
-        "FixedResponseConfig":{"shape":"FixedResponseActionConfig"}
+        "FixedResponseConfig":{"shape":"FixedResponseActionConfig"},
+        "ForwardConfig":{"shape":"ForwardActionConfig"}
       }
     },
     "ActionOrder":{
@@ -702,6 +720,11 @@
       },
       "exception":true
     },
+    "AlpnPolicyName":{
+      "type":"list",
+      "member":{"shape":"AlpnPolicyValue"}
+    },
+    "AlpnPolicyValue":{"type":"string"},
     "AuthenticateCognitoActionAuthenticationRequestExtraParams":{
       "type":"map",
       "key":{"shape":"AuthenticateCognitoActionAuthenticationRequestParamName"},
@@ -795,6 +818,7 @@
       "members":{
         "ZoneName":{"shape":"ZoneName"},
         "SubnetId":{"shape":"SubnetId"},
+        "OutpostId":{"shape":"OutpostId"},
         "LoadBalancerAddresses":{"shape":"LoadBalancerAddresses"}
       }
     },
@@ -868,7 +892,8 @@
         "Port":{"shape":"Port"},
         "SslPolicy":{"shape":"SslPolicyName"},
         "Certificates":{"shape":"CertificateList"},
-        "DefaultActions":{"shape":"Actions"}
+        "DefaultActions":{"shape":"Actions"},
+        "AlpnPolicy":{"shape":"AlpnPolicyName"}
       }
     },
     "CreateListenerOutput":{
@@ -888,7 +913,8 @@
         "Scheme":{"shape":"LoadBalancerSchemeEnum"},
         "Tags":{"shape":"TagList"},
         "Type":{"shape":"LoadBalancerTypeEnum"},
-        "IpAddressType":{"shape":"IpAddressType"}
+        "IpAddressType":{"shape":"IpAddressType"},
+        "CustomerOwnedIpv4Pool":{"shape":"CustomerOwnedIpv4Pool"}
       }
     },
     "CreateLoadBalancerOutput":{
@@ -945,6 +971,11 @@
       }
     },
     "CreatedTime":{"type":"timestamp"},
+    "CustomerOwnedIpv4Pool":{
+      "type":"string",
+      "max":256,
+      "pattern":"^(ipv4pool-coip-)[a-zA-Z0-9]+$"
+    },
     "DNSName":{"type":"string"},
     "Default":{"type":"boolean"},
     "DeleteListenerInput":{
@@ -1242,6 +1273,13 @@
       "type":"string",
       "pattern":"^(2|4|5)\\d\\d$"
     },
+    "ForwardActionConfig":{
+      "type":"structure",
+      "members":{
+        "TargetGroups":{"shape":"TargetGroupList"},
+        "TargetGroupStickinessConfig":{"shape":"TargetGroupStickinessConfig"}
+      }
+    },
     "HealthCheckEnabled":{"type":"boolean"},
     "HealthCheckIntervalSeconds":{
       "type":"integer",
@@ -1400,7 +1438,8 @@
         "Protocol":{"shape":"ProtocolEnum"},
         "Certificates":{"shape":"CertificateList"},
         "SslPolicy":{"shape":"SslPolicyName"},
-        "DefaultActions":{"shape":"Actions"}
+        "DefaultActions":{"shape":"Actions"},
+        "AlpnPolicy":{"shape":"AlpnPolicyName"}
       }
     },
     "ListenerArn":{"type":"string"},
@@ -1437,14 +1476,16 @@
         "Type":{"shape":"LoadBalancerTypeEnum"},
         "AvailabilityZones":{"shape":"AvailabilityZones"},
         "SecurityGroups":{"shape":"SecurityGroups"},
-        "IpAddressType":{"shape":"IpAddressType"}
+        "IpAddressType":{"shape":"IpAddressType"},
+        "CustomerOwnedIpv4Pool":{"shape":"CustomerOwnedIpv4Pool"}
       }
     },
     "LoadBalancerAddress":{
       "type":"structure",
       "members":{
         "IpAddress":{"shape":"IpAddress"},
-        "AllocationId":{"shape":"AllocationId"}
+        "AllocationId":{"shape":"AllocationId"},
+        "PrivateIPv4Address":{"shape":"PrivateIPv4Address"}
       }
     },
     "LoadBalancerAddresses":{
@@ -1545,7 +1586,8 @@
         "Protocol":{"shape":"ProtocolEnum"},
         "SslPolicy":{"shape":"SslPolicyName"},
         "Certificates":{"shape":"CertificateList"},
-        "DefaultActions":{"shape":"Actions"}
+        "DefaultActions":{"shape":"Actions"},
+        "AlpnPolicy":{"shape":"AlpnPolicyName"}
       }
     },
     "ModifyListenerOutput":{
@@ -1637,6 +1679,7 @@
       },
       "exception":true
     },
+    "OutpostId":{"type":"string"},
     "PageSize":{
       "type":"integer",
       "max":400,
@@ -1669,6 +1712,7 @@
       },
       "exception":true
     },
+    "PrivateIPv4Address":{"type":"string"},
     "ProtocolEnum":{
       "type":"string",
       "enum":[
@@ -1977,7 +2021,8 @@
       "type":"structure",
       "members":{
         "SubnetId":{"shape":"SubnetId"},
-        "AllocationId":{"shape":"AllocationId"}
+        "AllocationId":{"shape":"AllocationId"},
+        "PrivateIPv4Address":{"shape":"PrivateIPv4Address"}
       }
     },
     "SubnetMappings":{
@@ -2106,6 +2151,10 @@
       "type":"list",
       "member":{"shape":"TargetGroupAttribute"}
     },
+    "TargetGroupList":{
+      "type":"list",
+      "member":{"shape":"TargetGroupTuple"}
+    },
     "TargetGroupName":{"type":"string"},
     "TargetGroupNames":{
       "type":"list",
@@ -2122,6 +2171,23 @@
       },
       "exception":true
     },
+    "TargetGroupStickinessConfig":{
+      "type":"structure",
+      "members":{
+        "Enabled":{"shape":"TargetGroupStickinessEnabled"},
+        "DurationSeconds":{"shape":"TargetGroupStickinessDurationSeconds"}
+      }
+    },
+    "TargetGroupStickinessDurationSeconds":{"type":"integer"},
+    "TargetGroupStickinessEnabled":{"type":"boolean"},
+    "TargetGroupTuple":{
+      "type":"structure",
+      "members":{
+        "TargetGroupArn":{"shape":"TargetGroupArn"},
+        "Weight":{"shape":"TargetGroupWeight"}
+      }
+    },
+    "TargetGroupWeight":{"type":"integer"},
     "TargetGroups":{
       "type":"list",
       "member":{"shape":"TargetGroup"}
@@ -2277,6 +2343,17 @@
       },
       "error":{
         "code":"TooManyTargets",
+        "httpStatusCode":400,
+        "senderFault":true
+      },
+      "exception":true
+    },
+    "TooManyUniqueTargetGroupsPerLoadBalancerException":{
+      "type":"structure",
+      "members":{
+      },
+      "error":{
+        "code":"TooManyUniqueTargetGroupsPerLoadBalancer",
         "httpStatusCode":400,
         "senderFault":true
       },

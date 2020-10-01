@@ -1,9 +1,13 @@
+// +build go1.7
+
 package endpoints
 
 import (
 	"encoding/json"
 	"reflect"
 	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -206,9 +210,12 @@ func TestEndpointResolve(t *testing.T) {
 		SSLCommonName:     "new sslCommonName",
 	}
 
-	resolved := e.resolve("service", "region", "dnsSuffix",
+	resolved, err := e.resolve("service", "partitionID", "region", "dnsSuffix",
 		defs, Options{},
 	)
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
 
 	if e, a := "https://service.region.dnsSuffix", resolved.URL; e != a {
 		t.Errorf("expect %v, got %v", e, a)
@@ -221,6 +228,14 @@ func TestEndpointResolve(t *testing.T) {
 	}
 	if e, a := "v4", resolved.SigningMethod; e != a {
 		t.Errorf("expect %v, got %v", e, a)
+	}
+
+	// Check Invalid Region Identifier Format
+	_, err = e.resolve("service", "partitionID", "notvalid.com", "dnsSuffix",
+		defs, Options{},
+	)
+	if err == nil {
+		t.Errorf("expected err, got nil")
 	}
 }
 
@@ -251,72 +266,6 @@ func TestEndpointMergeIn(t *testing.T) {
 	if e, a := expected, actual; !reflect.DeepEqual(e, a) {
 		t.Errorf("expect %v, got %v", e, a)
 	}
-}
-
-var testPartitions = partitions{
-	partition{
-		ID:        "part-id",
-		Name:      "partitionName",
-		DNSSuffix: "amazonaws.com",
-		RegionRegex: regionRegex{
-			Regexp: func() *regexp.Regexp {
-				reg, _ := regexp.Compile("^(us|eu|ap|sa|ca)\\-\\w+\\-\\d+$")
-				return reg
-			}(),
-		},
-		Defaults: endpoint{
-			Hostname:          "{service}.{region}.{dnsSuffix}",
-			Protocols:         []string{"https"},
-			SignatureVersions: []string{"v4"},
-		},
-		Regions: regions{
-			"us-east-1": region{
-				Description: "region description",
-			},
-			"us-west-2": region{},
-		},
-		Services: services{
-			"s3": service{},
-			"service1": service{
-				Defaults: endpoint{
-					CredentialScope: credentialScope{
-						Service: "service1",
-					},
-				},
-				Endpoints: endpoints{
-					"us-east-1": {},
-					"us-west-2": {
-						HasDualStack:      boxedTrue,
-						DualStackHostname: "{service}.dualstack.{region}.{dnsSuffix}",
-					},
-				},
-			},
-			"service2": service{
-				Defaults: endpoint{
-					CredentialScope: credentialScope{
-						Service: "service2",
-					},
-				},
-			},
-			"httpService": service{
-				Defaults: endpoint{
-					Protocols: []string{"http"},
-				},
-			},
-			"globalService": service{
-				IsRegionalized:    boxedFalse,
-				PartitionEndpoint: "aws-global",
-				Endpoints: endpoints{
-					"aws-global": endpoint{
-						CredentialScope: credentialScope{
-							Region: "us-east-1",
-						},
-						Hostname: "globalService.amazonaws.com",
-					},
-				},
-			},
-		},
-	},
 }
 
 func TestResolveEndpoint(t *testing.T) {
@@ -537,5 +486,163 @@ func TestResolveEndpoint_AwsGlobal(t *testing.T) {
 	}
 	if !resolved.SigningNameDerived {
 		t.Errorf("expect the signing name to be derived")
+	}
+}
+
+func TestEndpointFor_RegionalFlag(t *testing.T) {
+	// AwsPartition resolver for STS regional endpoints in AWS Partition
+	resolver := AwsPartition()
+
+	cases := map[string]struct {
+		service, region                                     string
+		regional                                            bool
+		ExpectURL, ExpectSigningMethod, ExpectSigningRegion string
+		ExpectSigningNameDerived                            bool
+	}{
+		"acm/ap-northeast-1/regional": {
+			service:                  "acm",
+			region:                   "ap-northeast-1",
+			regional:                 true,
+			ExpectURL:                "https://acm.ap-northeast-1.amazonaws.com",
+			ExpectSigningMethod:      "v4",
+			ExpectSigningNameDerived: true,
+			ExpectSigningRegion:      "ap-northeast-1",
+		},
+		"acm/ap-northeast-1/legacy": {
+			service:                  "acm",
+			region:                   "ap-northeast-1",
+			regional:                 false,
+			ExpectURL:                "https://acm.ap-northeast-1.amazonaws.com",
+			ExpectSigningMethod:      "v4",
+			ExpectSigningNameDerived: true,
+			ExpectSigningRegion:      "ap-northeast-1",
+		},
+	}
+
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			var optionSlice []func(o *Options)
+			optionSlice = append(optionSlice, func(o *Options) {
+				if c.regional {
+					o.STSRegionalEndpoint = RegionalSTSEndpoint
+				}
+			})
+
+			actual, err := resolver.EndpointFor(c.service, c.region, optionSlice...)
+			if err != nil {
+				t.Fatalf("failed to resolve endpoint, %v", err)
+			}
+
+			if e, a := c.ExpectURL, actual.URL; e != a {
+				t.Errorf("expect %v, got %v", e, a)
+			}
+
+			if e, a := c.ExpectSigningMethod, actual.SigningMethod; e != a {
+				t.Errorf("expect %v, got %v", e, a)
+			}
+
+			if e, a := c.ExpectSigningNameDerived, actual.SigningNameDerived; e != a {
+				t.Errorf("expect %v, got %v", e, a)
+			}
+
+			if e, a := c.ExpectSigningRegion, actual.SigningRegion; e != a {
+				t.Errorf("expect %v, got %v", e, a)
+			}
+
+		})
+	}
+}
+
+func TestEndpointFor_EmptyRegion(t *testing.T) {
+	// skip this test for partitions outside `aws` partition
+	if DefaultPartitions()[0].id != "aws" {
+		t.Skip()
+	}
+
+	cases := map[string]struct {
+		Service    string
+		Region     string
+		RealRegion string
+		ExpectErr  string
+	}{
+		// Legacy services that previous accepted empty region
+		"budgets":       {Service: "budgets", RealRegion: "aws-global"},
+		"ce":            {Service: "ce", RealRegion: "aws-global"},
+		"chime":         {Service: "chime", RealRegion: "aws-global"},
+		"ec2metadata":   {Service: "ec2metadata", RealRegion: "aws-global"},
+		"iam":           {Service: "iam", RealRegion: "aws-global"},
+		"importexport":  {Service: "importexport", RealRegion: "aws-global"},
+		"organizations": {Service: "organizations", RealRegion: "aws-global"},
+		"route53":       {Service: "route53", RealRegion: "aws-global"},
+		"sts":           {Service: "sts", RealRegion: "aws-global"},
+		"support":       {Service: "support", RealRegion: "aws-global"},
+		"waf":           {Service: "waf", RealRegion: "aws-global"},
+
+		// Other services
+		"s3":           {Service: "s3", Region: "us-east-1", RealRegion: "us-east-1"},
+		"s3 no region": {Service: "s3", ExpectErr: "could not resolve endpoint"},
+	}
+
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			actual, err := DefaultResolver().EndpointFor(c.Service, c.Region)
+			if len(c.ExpectErr) != 0 {
+				if e, a := c.ExpectErr, err.Error(); !strings.Contains(a, e) {
+					t.Errorf("expect %q error in %q", e, a)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("expect no error got, %v", err)
+			}
+
+			expect, err := DefaultResolver().EndpointFor(c.Service, c.RealRegion)
+			if err != nil {
+				t.Fatalf("failed to get endpoint for default resolver")
+			}
+			if e, a := expect.URL, actual.URL; e != a {
+				t.Errorf("expect %v URL, got %v", e, a)
+			}
+			if e, a := expect.SigningRegion, actual.SigningRegion; e != a {
+				t.Errorf("expect %v signing region, got %v", e, a)
+			}
+
+		})
+	}
+}
+
+func TestRegionValidator(t *testing.T) {
+	cases := []struct {
+		Region string
+		Valid  bool
+	}{
+		0: {
+			Region: "us-east-1",
+			Valid:  true,
+		},
+		1: {
+			Region: "invalid.com",
+			Valid:  false,
+		},
+		2: {
+			Region: "@invalid.com/%23",
+			Valid:  false,
+		},
+		3: {
+			Region: "local",
+			Valid:  true,
+		},
+		4: {
+			Region: "9-west-1",
+			Valid:  true,
+		},
+	}
+
+	for i, tt := range cases {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if e, a := tt.Valid, validateInputRegion(tt.Region); e != a {
+				t.Errorf("expected %v, got %v", e, a)
+			}
+		})
 	}
 }
