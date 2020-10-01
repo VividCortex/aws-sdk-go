@@ -2,7 +2,17 @@
 
 package connect
 
+import (
+	"github.com/aws/aws-sdk-go/private/protocol"
+)
+
 const (
+
+	// ErrCodeContactFlowNotPublishedException for service response error code
+	// "ContactFlowNotPublishedException".
+	//
+	// The contact flow has not been published.
+	ErrCodeContactFlowNotPublishedException = "ContactFlowNotPublishedException"
 
 	// ErrCodeContactNotFoundException for service response error code
 	// "ContactNotFoundException".
@@ -19,7 +29,7 @@ const (
 	// ErrCodeDuplicateResourceException for service response error code
 	// "DuplicateResourceException".
 	//
-	// A resource with that name already exists.
+	// A resource with the specified name already exists.
 	ErrCodeDuplicateResourceException = "DuplicateResourceException"
 
 	// ErrCodeInternalServiceException for service response error code
@@ -28,10 +38,16 @@ const (
 	// Request processing failed due to an error or failure with the service.
 	ErrCodeInternalServiceException = "InternalServiceException"
 
+	// ErrCodeInvalidContactFlowException for service response error code
+	// "InvalidContactFlowException".
+	//
+	// The contact flow is not valid.
+	ErrCodeInvalidContactFlowException = "InvalidContactFlowException"
+
 	// ErrCodeInvalidParameterException for service response error code
 	// "InvalidParameterException".
 	//
-	// One or more of the parameters provided to the operation are not valid.
+	// One or more of the specified parameters are not valid.
 	ErrCodeInvalidParameterException = "InvalidParameterException"
 
 	// ErrCodeInvalidRequestException for service response error code
@@ -43,7 +59,7 @@ const (
 	// ErrCodeLimitExceededException for service response error code
 	// "LimitExceededException".
 	//
-	// The allowed limit for the resource has been reached.
+	// The allowed limit for the resource has been exceeded.
 	ErrCodeLimitExceededException = "LimitExceededException"
 
 	// ErrCodeOutboundContactNotPermittedException for service response error code
@@ -70,3 +86,19 @@ const (
 	// No user with the specified credentials was found in the Amazon Connect instance.
 	ErrCodeUserNotFoundException = "UserNotFoundException"
 )
+
+var exceptionFromCode = map[string]func(protocol.ResponseMetadata) error{
+	"ContactFlowNotPublishedException":     newErrorContactFlowNotPublishedException,
+	"ContactNotFoundException":             newErrorContactNotFoundException,
+	"DestinationNotAllowedException":       newErrorDestinationNotAllowedException,
+	"DuplicateResourceException":           newErrorDuplicateResourceException,
+	"InternalServiceException":             newErrorInternalServiceException,
+	"InvalidContactFlowException":          newErrorInvalidContactFlowException,
+	"InvalidParameterException":            newErrorInvalidParameterException,
+	"InvalidRequestException":              newErrorInvalidRequestException,
+	"LimitExceededException":               newErrorLimitExceededException,
+	"OutboundContactNotPermittedException": newErrorOutboundContactNotPermittedException,
+	"ResourceNotFoundException":            newErrorResourceNotFoundException,
+	"ThrottlingException":                  newErrorThrottlingException,
+	"UserNotFoundException":                newErrorUserNotFoundException,
+}

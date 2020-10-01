@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
@@ -67,7 +68,10 @@ func TestNew_WithSessionLoadError(t *testing.T) {
 	os.Setenv("AWS_PROFILE", "assume_role_invalid_source_profile")
 
 	logger := bytes.Buffer{}
-	s := New(&aws.Config{Logger: &mockLogger{&logger}})
+	s := New(&aws.Config{
+		Region: aws.String("us-west-2"),
+		Logger: &mockLogger{&logger},
+	})
 
 	if s == nil {
 		t.Errorf("expect not nil")
@@ -146,6 +150,39 @@ func TestSessionClientConfig(t *testing.T) {
 	}
 	if e, a := "other-region", *cfg.Config.Region; e != a {
 		t.Errorf("expect %v, got %v", e, a)
+	}
+}
+
+func TestNewSession_ResolveEndpointError(t *testing.T) {
+	logger := mockLogger{Buffer: bytes.NewBuffer(nil)}
+	sess, err := NewSession(defaults.Config(), &aws.Config{
+		Region: aws.String(""),
+		Logger: logger,
+		EndpointResolver: endpoints.ResolverFunc(
+			func(service, region string, opts ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
+				return endpoints.ResolvedEndpoint{}, fmt.Errorf("mock error")
+			},
+		),
+	})
+	if err != nil {
+		t.Fatalf("expect no error got %v", err)
+	}
+
+	cfg := sess.ClientConfig("mock service")
+
+	var r request.Request
+	cfg.Handlers.Validate.Run(&r)
+
+	if r.Error == nil {
+		t.Fatalf("expect validation error, got none")
+	}
+
+	if e, a := aws.ErrMissingRegion.Error(), r.Error.Error(); !strings.Contains(a, e) {
+		t.Errorf("expect %v validation error, got %v", e, a)
+	}
+
+	if v := logger.Buffer.String(); len(v) != 0 {
+		t.Errorf("expect nothing logged, got %s", v)
 	}
 }
 
@@ -528,6 +565,162 @@ func TestNewSession_EnvCredsWithInvalidConfigFile(t *testing.T) {
 			}
 			if e, a := c.ExpectCreds.ProviderName, creds.ProviderName; !strings.Contains(a, e) {
 				t.Errorf("expect %v, to be in %v", e, a)
+			}
+		})
+	}
+}
+
+func TestSession_RegionalEndpoints(t *testing.T) {
+	cases := map[string]struct {
+		Env    map[string]string
+		Config aws.Config
+
+		ExpectErr       string
+		ExpectSTS       endpoints.STSRegionalEndpoint
+		ExpectS3UsEast1 endpoints.S3UsEast1RegionalEndpoint
+	}{
+		"default": {
+			ExpectSTS:       endpoints.LegacySTSEndpoint,
+			ExpectS3UsEast1: endpoints.LegacyS3UsEast1Endpoint,
+		},
+		"enable regional": {
+			Config: aws.Config{
+				STSRegionalEndpoint:       endpoints.RegionalSTSEndpoint,
+				S3UsEast1RegionalEndpoint: endpoints.RegionalS3UsEast1Endpoint,
+			},
+			ExpectSTS:       endpoints.RegionalSTSEndpoint,
+			ExpectS3UsEast1: endpoints.RegionalS3UsEast1Endpoint,
+		},
+		"sts env enable": {
+			Env: map[string]string{
+				"AWS_STS_REGIONAL_ENDPOINTS": "regional",
+			},
+			ExpectSTS:       endpoints.RegionalSTSEndpoint,
+			ExpectS3UsEast1: endpoints.LegacyS3UsEast1Endpoint,
+		},
+		"sts us-east-1 env merge enable": {
+			Env: map[string]string{
+				"AWS_STS_REGIONAL_ENDPOINTS": "legacy",
+			},
+			Config: aws.Config{
+				STSRegionalEndpoint: endpoints.RegionalSTSEndpoint,
+			},
+			ExpectSTS:       endpoints.RegionalSTSEndpoint,
+			ExpectS3UsEast1: endpoints.LegacyS3UsEast1Endpoint,
+		},
+		"s3 us-east-1 env enable": {
+			Env: map[string]string{
+				"AWS_S3_US_EAST_1_REGIONAL_ENDPOINT": "regional",
+			},
+			ExpectSTS:       endpoints.LegacySTSEndpoint,
+			ExpectS3UsEast1: endpoints.RegionalS3UsEast1Endpoint,
+		},
+		"s3 us-east-1 env merge enable": {
+			Env: map[string]string{
+				"AWS_S3_US_EAST_1_REGIONAL_ENDPOINT": "legacy",
+			},
+			Config: aws.Config{
+				S3UsEast1RegionalEndpoint: endpoints.RegionalS3UsEast1Endpoint,
+			},
+			ExpectSTS:       endpoints.LegacySTSEndpoint,
+			ExpectS3UsEast1: endpoints.RegionalS3UsEast1Endpoint,
+		},
+	}
+
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			restoreEnvFn := initSessionTestEnv()
+			defer restoreEnvFn()
+
+			for k, v := range c.Env {
+				os.Setenv(k, v)
+			}
+
+			s, err := NewSession(&c.Config)
+			if len(c.ExpectErr) != 0 {
+				if err == nil {
+					t.Fatalf("expect session error, got none")
+				}
+				if e, a := c.ExpectErr, err.Error(); !strings.Contains(a, e) {
+					t.Fatalf("expect session error to contain %q, got %v", e, a)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("expect no error, got %v", err)
+			}
+
+			if e, a := c.ExpectSTS, s.Config.STSRegionalEndpoint; e != a {
+				t.Errorf("expect %v STSRegionalEndpoint, got %v", e, a)
+			}
+
+			if e, a := c.ExpectS3UsEast1, s.Config.S3UsEast1RegionalEndpoint; e != a {
+				t.Errorf("expect %v S3UsEast1RegionalEndpoint, got %v", e, a)
+			}
+
+			// Asserts
+		})
+	}
+}
+
+func TestSession_ClientConfig_ResolveEndpoint(t *testing.T) {
+	cases := map[string]struct {
+		Service        string
+		Region         string
+		Env            map[string]string
+		Options        Options
+		ExpectEndpoint string
+	}{
+		"IMDS custom endpoint from env": {
+			Service: ec2MetadataServiceID,
+			Region:  "ignored",
+			Env: map[string]string{
+				"AWS_EC2_METADATA_SERVICE_ENDPOINT": "http://example.aws",
+			},
+			ExpectEndpoint: "http://example.aws",
+		},
+		"IMDS custom endpoint from aws.Config": {
+			Service: ec2MetadataServiceID,
+			Region:  "ignored",
+			Options: Options{
+				EC2IMDSEndpoint: "http://example.aws",
+			},
+			ExpectEndpoint: "http://example.aws",
+		},
+		"IMDS custom endpoint from aws.Config and env": {
+			Service: ec2MetadataServiceID,
+			Region:  "ignored",
+			Env: map[string]string{
+				"AWS_EC2_METADATA_SERVICE_ENDPOINT": "http://wrong.example.aws",
+			},
+			Options: Options{
+				EC2IMDSEndpoint: "http://correct.example.aws",
+			},
+			ExpectEndpoint: "http://correct.example.aws",
+		},
+	}
+
+	for name, c := range cases {
+		t.Run(name, func(t *testing.T) {
+			restoreEnvFn := initSessionTestEnv()
+			defer restoreEnvFn()
+
+			for k, v := range c.Env {
+				os.Setenv(k, v)
+			}
+
+			s, err := NewSessionWithOptions(c.Options)
+			if err != nil {
+				t.Fatalf("expect no error, got %v", err)
+			}
+
+			clientCfg := s.ClientConfig(c.Service, &aws.Config{
+				Region: aws.String(c.Region),
+			})
+
+			if e, a := c.ExpectEndpoint, clientCfg.Endpoint; e != a {
+				t.Errorf("expect %v, got %v", e, a)
 			}
 		})
 	}
